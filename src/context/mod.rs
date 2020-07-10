@@ -125,7 +125,7 @@ impl<'c, 'a: 'c, C: Context<'c>> Lock<'c, 'a, C> {
 pub trait Context<'a>: ContextInternal<'a> {
 
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
-    /// 
+    ///
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
     fn lock<'c: 'a>(&'c self) -> Lock<'a, 'c, Self> {
         self.check_active();
@@ -133,9 +133,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Convenience method for locking the JavaScript engine and borrowing a single JS value's internals.
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
@@ -151,21 +151,22 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    fn borrow<'c, C, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
-        where C: Context<'c>,
+    fn borrow<'c, 'b, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
+        where 'c: 'a,
+              'b: 'a,
               V: Value,
               &'c V: Borrow,
-              F: for<'b> FnOnce(Ref<'c, 'b, <&'c V as Borrow>::Target, C>) -> T
+              F: FnOnce(Ref<'a, 'b, <&'c V as Borrow>::Target, Self>) -> T
     {
-        let lock = self.lock();
+        let lock: Lock<'a, 'b, Self> = self.lock();
         let contents = v.borrow(&lock);
         f(contents)
     }
 
     /// Convenience method for locking the JavaScript engine and mutably borrowing a single JS value's internals.
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -183,7 +184,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&mut` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    fn borrow_mut<'c: 'a, C, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
+    fn borrow_mut<'c: 'a, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
         where V: Value,
               &'c mut V: BorrowMut,
               F: for<'b> FnOnce(RefMut<'a, 'b, <&'c mut V as Borrow>::Target, Self>) -> T
@@ -194,9 +195,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Executes a computation in a new memory management scope.
-    /// 
+    ///
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape.
-    /// 
+    ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn execute_scoped<T, F>(&self, f: F) -> T
         where F: for<'b> FnOnce(ExecuteContext<'b>) -> T
@@ -209,9 +210,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Executes a computation in a new memory management scope and computes a single result value that outlives the computation.
-    /// 
+    ///
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
-    /// 
+    ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn compute_scoped<V, F>(&self, f: F) -> JsResult<'a, V>
         where V: Value,
@@ -243,14 +244,14 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Convenience method for creating a `JsString` value.
-    /// 
+    ///
     /// If the string exceeds the limits of the JS engine, this method panics.
     fn string<S: AsRef<str>>(&mut self, s: S) -> Handle<'a, JsString> {
         JsString::new(self, s)
     }
 
     /// Convenience method for creating a `JsString` value.
-    /// 
+    ///
     /// If the string exceeds the limits of the JS engine, this method returns an `Err` value.
     fn try_string<S: AsRef<str>>(&mut self, s: S) -> StringResult<'a> {
         JsString::try_new(self, s)
@@ -448,7 +449,7 @@ impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
 impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
 
 /// A view of the JS engine in the context of a function call.
-/// 
+///
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::HandleScope>,
