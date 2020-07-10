@@ -103,33 +103,33 @@ pub enum CallKind {
 /// An RAII implementation of a "scoped lock" of the JS engine. When this structure is dropped (falls out of scope), the engine will be unlocked.
 ///
 /// Types of JS values that support the `Borrow` and `BorrowMut` traits can be inspected while the engine is locked by passing a reference to a `Lock` to their methods.
-pub struct Lock<'a> {
+pub struct Lock<'c, 'a: 'c, C: Context<'c>> {
     pub(crate) ledger: RefCell<Ledger>,
-    pub(crate) env: Env,
-    phantom: PhantomData<&'a ()>
+    pub(crate) cx: &'a C,
+    phantom: PhantomData<&'c()>,
 }
 
-impl<'a> Lock<'a> {
-    fn new(env: Env) -> Self {
+impl<'c, 'a: 'c, C: Context<'c>> Lock<'c, 'a, C> {
+    fn new(cx: &'a C) -> Self {
         Lock {
             ledger: RefCell::new(Ledger::new()),
-            env,
+            cx,
             phantom: PhantomData,
         }
     }
 }
 
 /// An _execution context_, which provides context-sensitive access to the JavaScript engine. Most operations that interact with the engine require passing a reference to a context.
-/// 
+///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
 
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     /// 
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
-    fn lock<'c>(&'c self) -> Lock<'c> {
+    fn lock<'c: 'a>(&'c self) -> Lock<'a, 'c, Self> {
         self.check_active();
-        Lock::new(self.env())
+        Lock::new(self)
     }
 
     /// Convenience method for locking the JavaScript engine and borrowing a single JS value's internals.
@@ -145,16 +145,17 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// # Ok(n)
     /// # }
     /// ```
-    /// 
+    ///
     /// Note: the borrowed value is required to be a reference to a handle instead of a handle
     /// as a workaround for a [Rust compiler bug](https://github.com/rust-lang/rust/issues/29997).
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    fn borrow<'c, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
-        where V: Value,
+    fn borrow<'c, C, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
+        where C: Context<'c>,
+              V: Value,
               &'c V: Borrow,
-              F: for<'b> FnOnce(Ref<'b, <&'c V as Borrow>::Target>) -> T
+              F: for<'b> FnOnce(Ref<'c, 'b, <&'c V as Borrow>::Target, C>) -> T
     {
         let lock = self.lock();
         let contents = v.borrow(&lock);
@@ -176,16 +177,16 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// # Ok(cx.undefined())
     /// # }
     /// ```
-    /// 
+    ///
     /// Note: the borrowed value is required to be a reference to a handle instead of a handle
     /// as a workaround for a [Rust compiler bug](https://github.com/rust-lang/rust/issues/29997).
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&mut` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    fn borrow_mut<'c, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
+    fn borrow_mut<'c: 'a, C, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
         where V: Value,
               &'c mut V: BorrowMut,
-              F: for<'b> FnOnce(RefMut<'b, <&'c mut V as Borrow>::Target>) -> T
+              F: for<'b> FnOnce(RefMut<'a, 'b, <&'c mut V as Borrow>::Target, Self>) -> T
     {
         let lock = self.lock();
         let contents = v.borrow_mut(&lock);

@@ -236,7 +236,7 @@ impl<T: Class> Value for T { }
 impl<'a, T: Class> Borrow for &'a T {
     type Target = &'a mut T::Internals;
 
-    fn try_borrow<'b>(self, lock: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
+    fn try_borrow<'c, 'b: 'c, C: Context<'c>>(self, lock: &'b Lock<'c, 'b, C>) -> Result<Ref<'c, 'b, Self::Target, C>, LoanError> {
         unsafe {
             let ptr: *mut c_void = neon_runtime::class::get_instance_internals(self.to_raw());
             Ref::new(lock, mem::transmute(ptr))
@@ -247,13 +247,13 @@ impl<'a, T: Class> Borrow for &'a T {
 impl<'a, T: Class> Borrow for &'a mut T {
     type Target = &'a mut T::Internals;
 
-    fn try_borrow<'b>(self, lock: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
+    fn try_borrow<'c, 'b: 'c, C: Context<'c>>(self, lock: &'b Lock<'c, 'b, C>) -> Result<Ref<'c, 'b, Self::Target, C>, LoanError> {
         (self as &'a T).try_borrow(lock)
     }
 }
 
 impl<'a, T: Class> BorrowMut for &'a mut T {
-    fn try_borrow_mut<'b>(self, lock: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
+    fn try_borrow_mut<'c, 'b: 'c, C: Context<'c>>(self, lock: &'b Lock<'c, 'b, C>) -> Result<RefMut<'c, 'b, Self::Target, C>, LoanError> {
         unsafe {
             let ptr: *mut c_void = neon_runtime::class::get_instance_internals(self.to_raw());
             RefMut::new(lock, mem::transmute(ptr))

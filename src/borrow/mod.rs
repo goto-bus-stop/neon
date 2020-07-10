@@ -6,7 +6,7 @@ use std::ops::{Deref, DerefMut, Drop};
 use std::fmt;
 use std::os::raw::c_void;
 
-use context::Lock;
+use context::{Context, Lock};
 use self::internal::Pointer;
 
 /// A trait for JS values whose internal contents can be borrowed immutably by Rust while the JS engine is locked.
@@ -16,9 +16,9 @@ pub trait Borrow: Sized {
     type Target: Pointer;
 
     /// Borrow the contents of this value immutably.
-    /// 
+    ///
     /// If there is already an outstanding mutable loan for this value, this method panics.
-    fn borrow<'a>(self, lock: &'a Lock<'a>) -> Ref<'a, Self::Target> {
+    fn borrow<'c, 'a: 'c, C: Context<'c>>(self, lock: &'a Lock<'c, 'a, C>) -> Ref<'c, 'a, Self::Target, C> {
         match self.try_borrow(lock) {
             Ok(r) => r,
             Err(e) => panic!("{}", e)
@@ -26,9 +26,9 @@ pub trait Borrow: Sized {
     }
 
     /// Borrow the contents of this value immutably.
-    /// 
+    ///
     /// If there is already an outstanding mutable loan for this value, this method fails with a `LoanError`.
-    fn try_borrow<'a>(self, lock: &'a Lock<'a>) -> Result<Ref<'a, Self::Target>, LoanError>;
+    fn try_borrow<'c, 'a: 'c, C: Context<'c>>(self, lock: &'a Lock<'c, 'a, C>) -> Result<Ref<'c, 'a, Self::Target, C>, LoanError>;
 
 }
 
@@ -36,9 +36,9 @@ pub trait Borrow: Sized {
 pub trait BorrowMut: Borrow {
 
     /// Borrow the contents of this value mutably.
-    /// 
+    ///
     /// If there is already an outstanding loan for this value, this method panics.
-    fn borrow_mut<'a>(self, lock: &'a Lock<'a>) -> RefMut<'a, Self::Target> {
+    fn borrow_mut<'c, 'a: 'c, C:Context<'c>>(self, lock: &'a Lock<'c, 'a, C>) -> RefMut<'c, 'a, Self::Target, C> {
         match self.try_borrow_mut(lock) {
             Ok(r) => r,
             Err(e) => panic!("{}", e)
@@ -46,9 +46,9 @@ pub trait BorrowMut: Borrow {
     }
 
     /// Borrow the contents of this value mutably.
-    /// 
+    ///
     /// If there is already an outstanding loan for this value, this method panics.
-    fn try_borrow_mut<'a>(self, lock: &'a Lock<'a>) -> Result<RefMut<'a, Self::Target>, LoanError>;
+    fn try_borrow_mut<'c, 'a: 'c, C:Context<'c>>(self, lock: &'a Lock<'c, 'a, C>) -> Result<RefMut<'c, 'a, Self::Target, C>, LoanError>;
 
 }
 
@@ -77,27 +77,27 @@ impl fmt::Display for LoanError {
 }
 
 /// An immutable reference to the contents of a borrowed JS value.
-pub struct Ref<'a, T: Pointer> {
+pub struct Ref<'c, 'a: 'c, T: Pointer, C: Context<'c>> {
     pointer: T,
-    lock: &'a Lock<'a>
+    lock: &'a Lock<'c, 'a, C>
 }
 
-impl<'a, T: Pointer> Ref<'a, T> {
-    pub(crate) unsafe fn new(lock: &'a Lock<'a>, pointer: T) -> Result<Self, LoanError> {
+impl<'c, 'a: 'c, T: Pointer, C: Context<'c>> Ref<'c, 'a, T, C> {
+    pub(crate) unsafe fn new(lock: &'a Lock<'c, 'a, C>, pointer: T) -> Result<Self, LoanError> {
         let mut ledger = lock.ledger.borrow_mut();
         ledger.try_borrow(pointer.as_ptr())?;
         Ok(Ref { pointer, lock })
     }
 }
 
-impl<'a, T: Pointer> Drop for Ref<'a, T> {
+impl<'c, 'a: 'c, T: Pointer, C: Context<'c>> Drop for Ref<'c, 'a, T, C> {
     fn drop(&mut self) {
         let mut ledger = self.lock.ledger.borrow_mut();
         ledger.settle(unsafe { self.pointer.as_ptr() });
     }
 }
 
-impl<'a, T: Pointer> Deref for Ref<'a, T> {
+impl<'c, 'a: 'c, T: Pointer, C: Context<'c>> Deref for Ref<'c, 'a, T, C> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -106,27 +106,27 @@ impl<'a, T: Pointer> Deref for Ref<'a, T> {
 }
 
 /// A mutable reference to the contents of a borrowed JS value.
-pub struct RefMut<'a, T: Pointer> {
+pub struct RefMut<'c, 'a: 'c, T: Pointer, C: Context<'c>> {
     pointer: T,
-    lock: &'a Lock<'a>
+    lock: &'a Lock<'c, 'a, C>,
 }
 
-impl<'a, T: Pointer> RefMut<'a, T> {
-    pub(crate) unsafe fn new(lock: &'a Lock<'a>, mut pointer: T) -> Result<Self, LoanError> {
+impl<'c, 'a: 'c, T: Pointer, C: Context<'c>> RefMut<'c, 'a, T, C> {
+    pub(crate) unsafe fn new(lock: &'a Lock<'c, 'a, C>, mut pointer: T) -> Result<Self, LoanError> {
         let mut ledger = lock.ledger.borrow_mut();
         ledger.try_borrow_mut(pointer.as_mut())?;
         Ok(RefMut { pointer, lock })
     }
 }
 
-impl<'a, T: Pointer> Drop for RefMut<'a, T> {
+impl<'c, 'a: 'c, T: Pointer, C: Context<'c>> Drop for RefMut<'c, 'a, T, C> {
     fn drop(&mut self) {
         let mut ledger = self.lock.ledger.borrow_mut();
         ledger.settle_mut(unsafe { self.pointer.as_mut() });
     }
 }
 
-impl<'a, T: Pointer> Deref for RefMut<'a, T> {
+impl<'c, 'a: 'c, T: Pointer, C: Context<'c>> Deref for RefMut<'c, 'a, T, C> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -134,7 +134,7 @@ impl<'a, T: Pointer> Deref for RefMut<'a, T> {
     }
 }
 
-impl<'a, T: Pointer> DerefMut for RefMut<'a, T> {
+impl<'c, 'a: 'c, T: Pointer, C: Context<'c>> DerefMut for RefMut<'c, 'a, T, C> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.pointer
     }

@@ -173,13 +173,13 @@ impl<'a> BinaryData<'a> {
 impl<'a> Borrow for &'a JsBuffer {
     type Target = BinaryData<'a>;
 
-    fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
+    fn try_borrow<'c, 'b: 'c, C: Context<'c>>(self, guard: &'b Lock<'c, 'b, C>) -> Result<Ref<'c, 'b, Self::Target, C>, LoanError> {
         let mut data = MaybeUninit::<BinaryData>::uninit();
 
         // Initialize pointer
         unsafe {
             let pointer = data.as_mut_ptr();
-            (*pointer).size = neon_runtime::buffer::data(guard.env.to_raw(), &mut (*pointer).base, self.to_raw());
+            (*pointer).size = neon_runtime::buffer::data(guard.cx.env().to_raw(), &mut (*pointer).base, self.to_raw());
         }
 
         // UB if pointer is not initialized!
@@ -192,19 +192,19 @@ impl<'a> Borrow for &'a JsBuffer {
 impl<'a> Borrow for &'a mut JsBuffer {
     type Target = BinaryData<'a>;
 
-    fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
+    fn try_borrow<'c, 'b: 'c, C: Context<'c>>(self, guard: &'b Lock<'c, 'b, C>) -> Result<Ref<'c, 'b, Self::Target, C>, LoanError> {
         (self as &'a JsBuffer).try_borrow(guard)
     }
 }
 
 impl<'a> BorrowMut for &'a mut JsBuffer {
-    fn try_borrow_mut<'b>(self, guard: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
+    fn try_borrow_mut<'c, 'b: 'c, C: Context<'c>>(self, guard: &'b Lock<'c, 'b, C>) -> Result<RefMut<'c, 'b, Self::Target, C>, LoanError> {
         let mut data = MaybeUninit::<BinaryData>::uninit();
 
         // Initialize pointer
         unsafe {
             let pointer = data.as_mut_ptr();
-            (*pointer).size = neon_runtime::buffer::data(guard.env.to_raw(), &mut (*pointer).base, self.to_raw());
+            (*pointer).size = neon_runtime::buffer::data(guard.cx.env().to_raw(), &mut (*pointer).base, self.to_raw());
         }
 
         // UB if pointer is not initialized!
@@ -217,13 +217,13 @@ impl<'a> BorrowMut for &'a mut JsBuffer {
 impl<'a> Borrow for &'a JsArrayBuffer {
     type Target = BinaryData<'a>;
 
-    fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
+    fn try_borrow<'c, 'b: 'c, C: Context<'c>>(self, guard: &'b Lock<'c, 'b, C>) -> Result<Ref<'c, 'b, Self::Target, C>, LoanError> {
         let mut data = MaybeUninit::<BinaryData>::uninit();
 
         // Initialize pointer
         unsafe {
             let pointer = data.as_mut_ptr();
-            (*pointer).size = neon_runtime::arraybuffer::data(guard.env.to_raw(), &mut (*pointer).base, self.to_raw());
+            (*pointer).size = neon_runtime::arraybuffer::data(guard.cx.env().to_raw(), &mut (*pointer).base, self.to_raw());
         }
 
         // UB if pointer is not initialized!
@@ -236,19 +236,19 @@ impl<'a> Borrow for &'a JsArrayBuffer {
 impl<'a> Borrow for &'a mut JsArrayBuffer {
     type Target = BinaryData<'a>;
 
-    fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
+    fn try_borrow<'c, 'b: 'c, C: Context<'c>>(self, guard: &'b Lock<'c, 'b, C>) -> Result<Ref<'c, 'b, Self::Target, C>, LoanError> {
         (self as &'a JsArrayBuffer).try_borrow(guard)
     }
 }
 
 impl<'a> BorrowMut for &'a mut JsArrayBuffer {
-    fn try_borrow_mut<'b>(self, guard: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
+    fn try_borrow_mut<'c, 'b: 'c, C: Context<'c>>(self, guard: &'b Lock<'c, 'b, C>) -> Result<RefMut<'c, 'b, Self::Target, C>, LoanError> {
         let mut data = MaybeUninit::<BinaryData>::uninit();
 
         // Initialize pointer
         unsafe {
             let pointer = data.as_mut_ptr();
-            (*pointer).size = neon_runtime::arraybuffer::data(guard.env.to_raw(), &mut (*pointer).base, self.to_raw());
+            (*pointer).size = neon_runtime::arraybuffer::data(guard.cx.env().to_raw(), &mut (*pointer).base, self.to_raw());
         }
 
         // UB if pointer is not initialized!
