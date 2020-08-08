@@ -53,9 +53,9 @@ macro_rules! register_module {
     (|$module:pat| $init:block) => {
         #[no_mangle]
         pub unsafe extern "C" fn napi_register_module_v1(
-            env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
-            m: $crate::macro_internal::runtime::nodejs_sys::napi_value
-        ) -> $crate::macro_internal::runtime::nodejs_sys::napi_value
+            env: $crate::macro_internal::runtime::bindings::napi_env,
+            m: $crate::macro_internal::runtime::bindings::napi_value
+        ) -> $crate::macro_internal::runtime::bindings::napi_value
         {
             // Suppress the default Rust panic hook, which prints diagnostics to stderr.
             #[cfg(not(feature = "default-panic-hook"))]
@@ -383,7 +383,7 @@ mod tests {
         };
 
         eprintln!("Running Neon test: {} {} {}", shell, command_flag, cmd);
-    
+
         assert!(Command::new(&shell)
                         .current_dir(dir)
                         .args(&[&command_flag, cmd])
@@ -495,7 +495,7 @@ mod tests {
         if std::env::var("CI") == Ok("true".to_string()) {
             run("cargo package", &test_package);
         } else {
-            run("cargo package --allow-dirty", &test_package);            
+            run("cargo package --allow-dirty", &test_package);
         }
     }
 

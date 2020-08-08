@@ -8,6 +8,7 @@ pub fn main() {
         .dynamic_library_name("NodeApi")
         .whitelist_function("napi_.*")
         .whitelist_type("napi_.*")
+        .size_t_is_usize(true)
         .default_enum_style(EnumVariation::Rust { non_exhaustive: false })
         .generate()
         .unwrap();

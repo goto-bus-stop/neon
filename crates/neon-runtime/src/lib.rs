@@ -11,6 +11,7 @@ cfg_if! {
         pub use nan::*;
     } else if #[cfg(feature = "nodejs-sys")] {
         // The N-API variant is only the default API if the legacy variant is disabled.
+        pub use napi_dynamic_sys as bindings;
         pub mod napi;
         pub use napi::*;
     }
