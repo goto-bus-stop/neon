@@ -1,0 +1,13 @@
+[package]
+name = "napi-dynamic-sys"
+version = "0.1.0"
+authors = ["Renée Kooi <renee@kooi.me>"]
+edition = "2018"
+repository = "https://github.com/neon-bindings/neon"
+license = "MIT/Apache-2.0"
+build = "build.rs"
+
+[dependencies]
+
+[build-dependencies]
+bindgen = { version = "0.54.1", git = "https://github.com/joechrisellis/rust-bindgen" }

@@ -9,10 +9,12 @@ license = "MIT/Apache-2.0"
 [dependencies]
 cfg-if = "0.1.9"
 neon-sys = { version = "=0.4.0", path = "../neon-sys", optional = true }
-nodejs-sys = { version = "0.2.0", optional = true }
+# nodejs-sys = { version = "0.2.0", optional = true }
+napi-dynamic-sys = { path = "../napi-dynamic-sys", optional = true }
 
 [features]
 default = []
+nodejs-sys = ["napi-dynamic-sys"]
 docs-only = ["neon-sys/docs-only"]
 
 [package.metadata.docs.rs]
