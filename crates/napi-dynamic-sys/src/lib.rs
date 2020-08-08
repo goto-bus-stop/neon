@@ -14,9 +14,15 @@ pub use bindings::*;
 mod host_library {
     use libloading::os::windows::Library;
     use winapi::um::libloaderapi::GetModuleHandleA;
+    use std::ptr::null_mut;
+
     pub fn get() -> libloading::Library {
-        let host_handle = GetModuleHandleA(null_mut());
-        Library::from_raw(host_handle).into()
+        // This is safe because the handle for the process is alive for the full lifetime of this
+        // addon.
+        unsafe {
+            let host_handle = GetModuleHandleA(null_mut());
+            Library::from_raw(host_handle)
+        }.into()
     }
 }
 
