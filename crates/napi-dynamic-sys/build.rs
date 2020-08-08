@@ -3,9 +3,8 @@ use std::path::PathBuf;
 use bindgen::EnumVariation;
 
 pub fn main() {
-    let bindings = bindgen::Builder::new()
+    let bindings = bindgen::builder()
         .header("include/node_api.h")
-        .dynamic_loading(true)
         .dynamic_library_name("NodeApi")
         .whitelist_function("napi_.*")
         .whitelist_type("napi_.*")

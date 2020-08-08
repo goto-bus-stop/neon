@@ -1,6 +1,6 @@
 use std::ptr;
 
-use nodejs_sys as napi;
+use napi_dynamic_sys as napi;
 
 pub type Local = napi::napi_value;
 

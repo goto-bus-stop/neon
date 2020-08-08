@@ -1,6 +1,6 @@
 use std::os::raw::c_void;
-use call::CCallback;
-use raw::{Env, Local};
+use super::call::CCallback;
+use super::raw::{Env, Local};
 
 pub unsafe extern "C" fn get_class_map(_isolate: Env) -> *mut c_void { unimplemented!() }
 

@@ -1,3 +1,5 @@
+use napi_dynamic_sys as napi;
+
 pub mod array;
 pub mod arraybuffer;
 pub mod buffer;
@@ -15,3 +17,7 @@ pub mod string;
 pub mod tag;
 pub mod task;
 pub mod handler;
+
+lazy_static::lazy_static! {
+    static ref NAPI: napi::NodeApi<'static> = napi::from_host();
+}

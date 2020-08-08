@@ -5,16 +5,18 @@ authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "Bindings to the Node.js native addon API, used by the Neon implementation."
 repository = "https://github.com/neon-bindings/neon"
 license = "MIT/Apache-2.0"
+edition = "2018"
 
 [dependencies]
 cfg-if = "0.1.9"
 neon-sys = { version = "=0.4.0", path = "../neon-sys", optional = true }
 # nodejs-sys = { version = "0.2.0", optional = true }
 napi-dynamic-sys = { path = "../napi-dynamic-sys", optional = true }
+lazy_static = { version = "1.4.0", optional = true }
 
 [features]
 default = []
-nodejs-sys = ["napi-dynamic-sys"]
+nodejs-sys = ["napi-dynamic-sys", "lazy_static"]
 docs-only = ["neon-sys/docs-only"]
 
 [package.metadata.docs.rs]
