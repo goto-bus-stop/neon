@@ -61,6 +61,9 @@ macro_rules! register_module {
             #[cfg(not(feature = "default-panic-hook"))]
             ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
 
+            // Must be done before _any_ N-API calls.
+            $crate::macro_internal::runtime::initialize();
+
             fn __init_neon_module($module: $crate::context::ModuleContext) -> $crate::result::NeonResult<()> $init
 
             $crate::macro_internal::initialize_module(

@@ -1,6 +1,7 @@
 use std::ptr;
 
 use napi_dynamic_sys as napi;
+use super::napi;
 
 pub type Local = napi::napi_value;
 

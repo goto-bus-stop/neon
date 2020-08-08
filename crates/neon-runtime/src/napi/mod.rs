@@ -1,4 +1,5 @@
-use napi_dynamic_sys as napi;
+use std::mem::MaybeUninit;
+use napi_dynamic_sys::NodeApi;
 
 pub mod array;
 pub mod arraybuffer;
@@ -18,6 +19,16 @@ pub mod tag;
 pub mod task;
 pub mod handler;
 
-lazy_static::lazy_static! {
-    static ref NAPI: napi::NodeApi<'static> = napi::from_host();
+static mut NAPI: MaybeUninit<NodeApi<'static>> = MaybeUninit::uninit();
+
+#[inline(always)]
+unsafe fn napi() -> &'static NodeApi<'static> {
+    // assume_init() takes ownership, so we cannot do that
+    // get_ref() would do what we want but is unstable
+    // https://github.com/rust-lang/rust/issuse/63568
+    &*NAPI.as_ptr()
+}
+
+pub unsafe fn initialize() {
+    *NAPI.as_mut_ptr() = napi_dynamic_sys::from_host();
 }
