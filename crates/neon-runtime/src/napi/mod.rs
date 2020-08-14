@@ -1,5 +1,5 @@
-use std::mem::MaybeUninit;
-use napi_dynamic_sys::NodeApi;
+#[macro_use]
+pub(crate) mod bindings;
 
 pub mod array;
 pub mod arraybuffer;
@@ -19,16 +19,9 @@ pub mod tag;
 pub mod task;
 pub mod handler;
 
-static mut NAPI: MaybeUninit<NodeApi<'static>> = MaybeUninit::uninit();
-
-#[inline(always)]
-unsafe fn napi() -> &'static NodeApi<'static> {
-    // assume_init() takes ownership, so we cannot do that
-    // get_ref() would do what we want but is unstable
-    // https://github.com/rust-lang/rust/issuse/63568
-    &*NAPI.as_ptr()
-}
-
+/// Initialize the N-API runtime.
+///
+/// This must be called before any other neon-runtime functions are used.
 pub unsafe fn initialize() {
-    *NAPI.as_mut_ptr() = napi_dynamic_sys::from_host();
+    bindings::load();
 }
