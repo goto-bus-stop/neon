@@ -19,14 +19,14 @@ impl Root for HandleScope {
     unsafe fn allocate() -> Self { HandleScope::new() }
     unsafe fn enter(&mut self, env: Env) {
         let mut scope = MaybeUninit::uninit();
-        let status = napi!(napi_open_handle_scope, env, scope.as_mut_ptr());
+        let status = napi!(napi_open_handle_scope(env, scope.as_mut_ptr()));
 
         assert_eq!(status, napi::napi_status::napi_ok);
 
         self.word = scope.assume_init();
     }
     unsafe fn exit(&mut self, env: Env) {
-        let status = napi!(napi_close_handle_scope, env, self.word);
+        let status = napi!(napi_close_handle_scope(env, self.word));
 
         assert_eq!(status, napi::napi_status::napi_ok);
     }
@@ -36,14 +36,14 @@ impl Root for EscapableHandleScope {
     unsafe fn allocate() -> Self { EscapableHandleScope::new() }
     unsafe fn enter(&mut self, env: Env) {
         let mut scope = MaybeUninit::uninit();
-        let status = napi!(napi_open_escapable_handle_scope, env, scope.as_mut_ptr());
+        let status = napi!(napi_open_escapable_handle_scope(env, scope.as_mut_ptr()));
 
         assert_eq!(status, napi::napi_status::napi_ok);
 
         self.word = scope.assume_init();
     }
     unsafe fn exit(&mut self, env: Env) {
-        let status = napi!(napi_close_escapable_handle_scope, env, self.word);
+        let status = napi!(napi_close_escapable_handle_scope(env, self.word));
 
         assert_eq!(status, napi::napi_status::napi_ok);
     }
@@ -70,5 +70,5 @@ pub unsafe extern "C" fn escapable_size() -> usize { unimplemented!() }
 pub unsafe extern "C" fn escapable_alignment() -> usize { unimplemented!() }
 
 pub unsafe extern "C" fn get_global(env: Env, out: &mut Local) {
-    assert_eq!(napi!(napi_get_global, env, out as *mut _), napi::napi_status::napi_ok);
+    assert_eq!(napi!(napi_get_global(env, out as *mut _)), napi::napi_status::napi_ok);
 }
