@@ -10,6 +10,7 @@ pub fn main() {
         .whitelist_type("napi_.*")
         .size_t_is_usize(true)
         .default_enum_style(EnumVariation::Rust { non_exhaustive: false })
+        .clang_args(&["-target", &env::var("TARGET").unwrap()])
         .generate()
         .unwrap();
 
